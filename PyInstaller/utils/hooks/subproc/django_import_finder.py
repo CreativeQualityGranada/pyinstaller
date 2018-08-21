@@ -31,12 +31,16 @@ from django.conf import settings
 
 from PyInstaller.utils.hooks import collect_submodules
 
+from pkg_resources import parse_version
+
 
 hiddenimports = list(settings.INSTALLED_APPS) + \
-                 list(settings.TEMPLATE_CONTEXT_PROCESSORS) + \
-                 list(settings.TEMPLATE_LOADERS) + \
                  [settings.ROOT_URLCONF]
 
+### Changes in Django 1.8.
+if parse_version(django.get_version()) < parse_version('1.8'):
+    hiddenimports += list(settings.TEMPLATE_CONTEXT_PROCESSORS) + \
+					list(settings.TEMPLATE_LOADERS)
 
 def _remove_class(class_name):
     return '.'.join(class_name.split('.')[0:-1])
