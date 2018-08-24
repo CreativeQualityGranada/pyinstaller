@@ -13,6 +13,7 @@
     'matplotlib': ['pyi_rth_mplconfig.py', 'pyi_rth_mpldata.py'],
     'osgeo':      ['pyi_rth_osgeo.py'],
     'pkg_resources':  ['pyi_rth_pkgres.py'],
+	'pkg_util' : ['pyi_rth_pkgutil.py'],
     'PyQt4':      ['pyi_rth_qt4plugins.py'],
     'PyQt5':      ['pyi_rth_qt5.py'],
     'PyQt5.QtWebEngineWidgets': ['pyi_rth_qt5webengine.py'],
@@ -26,5 +27,4 @@
     'usb':        ['pyi_rth_usb.py'],
     'win32com':   ['pyi_rth_win32comgenpy.py'],
     'multiprocessing': ['pyi_rth_multiprocessing.py'],
-	'pkgutil' : ['pyi_rth_pkgutil.py'],
 }
