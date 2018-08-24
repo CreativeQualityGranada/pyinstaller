@@ -96,6 +96,9 @@ if root_dir:
             for f in files:
                 datas.append((f, os.path.join(mod_name, bundle_dir)))
 
+    # Include data files for all apps
+    for app in installed_apps:
+        datas += collect_data_files(app)
 
     # Include data files from your Django project found in your django root package.
     datas += collect_data_files(package_name)
