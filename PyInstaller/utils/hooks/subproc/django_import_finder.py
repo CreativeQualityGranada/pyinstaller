@@ -87,11 +87,21 @@ def find_url_callbacks(urls_module):
     else:
         urlpatterns = urls_module.urlpatterns
         hid_list = [urls_module.__name__]
-    for pattern in urlpatterns:
-        if isinstance(pattern, RegexURLPattern):
-            hid_list.append(pattern.callback.__module__)
-        elif isinstance(pattern, RegexURLResolver):
-            hid_list += find_url_callbacks(pattern.urlconf_module)
+
+    # Changes in Django 2.0
+    if parse_version(django.get_version()) < parse_version('2'):
+        for pattern in urlpatterns:
+            if isinstance(pattern, RegexURLPattern):
+                hid_list.append(pattern.callback.__module__)
+            elif isinstance(pattern, RegexURLResolver):
+                hid_list += find_url_callbacks(pattern.urlconf_module)
+    else:
+        for pattern in urlpatterns:
+            if isinstance(pattern, RegexPattern):
+                hid_list.append(pattern.callback.__module__)
+            elif isinstance(pattern, URLResolver):
+                hid_list += find_url_callbacks(pattern.urlconf_module)
+
     return hid_list
 
 
@@ -104,7 +114,11 @@ for app in settings.INSTALLED_APPS:
     hiddenimports.append(app_ctx_proc_module)
 
 
-from django.core.urlresolvers import RegexURLPattern, RegexURLResolver
+# Changes in Django 2.0
+if parse_version(django.get_version()) < parse_version('2'):
+    from django.core.urlresolvers import RegexURLPattern, RegexURLResolver
+else:
+    from django.urls.resolvers import RegexPattern, URLResolver
 
 
 # Construct base module name - without 'settings' suffix.

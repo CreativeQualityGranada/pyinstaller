@@ -153,6 +153,14 @@ class FrozenPackageImporter(object):
     of searching module.__path__
     """
     def __init__(self, importer, entry_name):
+        temploadm = self.load_module
+        for attrname in dir(importer):
+            if attrname[0] != '_' :
+                setattr(self,attrname,getattr(importer,attrname))
+
+        #set back the loadmodule
+        setattr(self, "load_module", temploadm)
+
         self._entry_name = entry_name
         self._importer = importer
 
@@ -272,7 +280,7 @@ class FrozenImporter(object):
 
         if fullname in self.toc:
             # Tell the import machinery to use self.load_module() to load the module.
-            module_loader = self
+            module_loader = FrozenPackageImporter(self, fullname)
             trace("import %s # PyInstaller PYZ", fullname)
         elif path is not None:
             # Try to handle module.__path__ modifications by the modules themselves
