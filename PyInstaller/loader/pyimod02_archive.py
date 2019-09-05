@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------------------
-# Copyright (c) 2005-2018, PyInstaller Development Team.
+# Copyright (c) 2005-2019, PyInstaller Development Team.
 #
 # Distributed under the terms of the GNU General Public License with exception
 # for distributing bootloader.
@@ -144,15 +144,11 @@ class ArchiveReader(object):
             import imp
             self.pymagic = imp.get_magic()
         else:
+            # Python 3.5+
             # We cannot use at this bootstrap stage importlib directly
             # but its frozen variant.
             import _frozen_importlib
-            if sys.version_info[1] == 4:
-                # Python 3.4
-                self.pymagic = _frozen_importlib.MAGIC_NUMBER
-            else:
-                # Python 3.5+
-                self.pymagic = _frozen_importlib._bootstrap_external.MAGIC_NUMBER
+            self.pymagic = _frozen_importlib._bootstrap_external.MAGIC_NUMBER
 
         if path is not None:
             self.lib = ArchiveFile(self.path, 'rb')

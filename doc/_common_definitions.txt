@@ -24,7 +24,7 @@
 .. _FAQ: https://github.com/pyinstaller/pyinstaller/wiki/FAQ
 .. _Git: http://git-scm.com/downloads
 .. _GraphicConverter: http://www.lemkesoft.de/en/products/graphic-converter/
-.. _GraphViz: http://graphviz.org/Home.php
+.. _GraphViz: https://graphviz.org/
 .. _Homebrew: http://brew.sh/
 .. _`How to Contribute`: https://github.com/pyinstaller/pyinstaller/wiki/How-to-Contribute
 .. _`How to Report Bugs`: https://github.com/pyinstaller/pyinstaller/wiki/How-to-Report-Bugs
@@ -68,7 +68,8 @@
 .. _`Supported Packages`: https://github.com/pyinstaller/pyinstaller/wiki/Supported-Packages
 .. _TDM-GCC: http://tdm-gcc.tdragon.net/
 .. _TkInter: http://wiki.python.org/moin/TkInter
-.. _UPX: http://upx.sourceforge.net/
+.. _`towncrier`: https://pypi.org/project/towncrier/
+.. _UPX: https://upx.github.io/
 .. _venv: https://docs.python.org/3/library/venv.html
 .. _virtualenv:  https://virtualenv.pypa.io
 .. _`Visual Studio Express`: http://www.microsoft.com/express/

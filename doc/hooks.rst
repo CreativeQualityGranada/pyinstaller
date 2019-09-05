@@ -108,7 +108,7 @@ applies them to the bundle being created.
     only when the hooked module is imported.
     Example::
 
-        hiddenimports = ['_gdbm', 'socket', 'h5py.defs'']
+        hiddenimports = ['_gdbm', 'socket', 'h5py.defs']
 
 ``excludedimports``
     A list of absolute module names that should
@@ -188,7 +188,7 @@ for example::
 ``is_darwin``:
    True in Mac OS X.
 ``is_linux``:
-   True in any Linux system (``sys.platform.startswith('linux')``).
+   True in any GNU/Linux system (``sys.platform.startswith('linux')``).
 ``is_solar``:
    True in Solaris.
 ``is_aix``:

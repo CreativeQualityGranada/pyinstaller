@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------------------
-# Copyright (c) 2005-2018, PyInstaller Development Team.
+# Copyright (c) 2005-2019, PyInstaller Development Team.
 #
 # Distributed under the terms of the GNU General Public License with exception
 # for distributing bootloader.
@@ -154,7 +154,7 @@ class PKG(Target):
                  'DEPENDENCY': 'd'}
 
     def __init__(self, toc, name=None, cdict=None, exclude_binaries=0,
-                 strip_binaries=False, upx_binaries=False):
+                 strip_binaries=False, upx_binaries=False, upx_exclude=None):
         """
         toc
                 A TOC (Table of Contents)
@@ -181,6 +181,7 @@ class PKG(Target):
         self.exclude_binaries = exclude_binaries
         self.strip_binaries = strip_binaries
         self.upx_binaries = upx_binaries
+        self.upx_exclude = upx_exclude or []
         # This dict tells PyInstaller what items embedded in the executable should
         # be compressed.
         if self.cdict is None:
@@ -202,6 +203,7 @@ class PKG(Target):
             ('exclude_binaries', _check_guts_eq),
             ('strip_binaries', _check_guts_eq),
             ('upx_binaries', _check_guts_eq),
+            ('upx_exclude', _check_guts_eq)
             # no calculated/analysed values
             )
 
@@ -255,7 +257,8 @@ class PKG(Target):
                     seenFnms_typ[fnm] = typ
 
                     fnm = checkCache(fnm, strip=self.strip_binaries,
-                                     upx=(self.upx_binaries and (is_win or is_cygwin)),
+                                     upx=self.upx_binaries,
+                                     upx_exclude=self.upx_exclude,
                                      dist_nm=inm)
 
                     mytoc.append((inm, fnm, self.cdict.get(typ, 0),
@@ -300,6 +303,13 @@ class EXE(Target):
         kwargs
             Possible keywork arguments:
 
+            bootloader_ignore_signals
+                Non-Windows only. If True, the bootloader process will ignore
+                all ignorable signals. If False (default), it will forward
+                all signals to the child process. Useful in situations where
+                e.g. a supervisor process signals both the bootloader and
+                child (e.g. via a process group) to avoid signalling the
+                child twice.
             console
                 On Windows or OSX governs whether to use the console executable
                 or the windowed executable. Always True on Linux/Unix (always
@@ -332,6 +342,8 @@ class EXE(Target):
 
         # Available options for EXE in .spec files.
         self.exclude_binaries = kwargs.get('exclude_binaries', False)
+        self.bootloader_ignore_signals = kwargs.get(
+            'bootloader_ignore_signals', False)
         self.console = kwargs.get('console', True)
         self.debug = kwargs.get('debug', False)
         self.name = kwargs.get('name', None)
@@ -340,6 +352,7 @@ class EXE(Target):
         self.manifest = kwargs.get('manifest', None)
         self.resources = kwargs.get('resources', [])
         self.strip = kwargs.get('strip', False)
+        self.upx_exclude = kwargs.get("upx_exclude", [])
         self.runtime_tmpdir = kwargs.get('runtime_tmpdir', None)
         # If ``append_pkg`` is false, the archive will not be appended
         # to the exe, but copied beside it.
@@ -391,6 +404,10 @@ class EXE(Target):
         if self.runtime_tmpdir is not None:
             self.toc.append(("pyi-runtime-tmpdir " + self.runtime_tmpdir, "", "OPTION"))
 
+        if self.bootloader_ignore_signals:
+            # no value; presence means "true"
+            self.toc.append(("pyi-bootloader-ignore-signals", "", "OPTION"))
+
         if is_win:
             filename = os.path.join(CONF['workpath'], CONF['specnm'] + ".exe.manifest")
             self.manifest = winmanifest.create_manifest(filename, self.manifest,
@@ -406,9 +423,16 @@ class EXE(Target):
                 self.toc.append(("pyi-windows-manifest-filename " + manifest_filename,
                                  "", "OPTION"))
 
+            if self.versrsrc:
+                if not os.path.isabs(self.versrsrc):
+                    # relative version-info path is relative to spec file
+                    self.versrsrc = os.path.join(
+                        CONF['specpath'], self.versrsrc)
+
         self.pkg = PKG(self.toc, cdict=kwargs.get('cdict', None),
                        exclude_binaries=self.exclude_binaries,
                        strip_binaries=self.strip, upx_binaries=self.upx,
+                       upx_exclude=self.upx_exclude
                        )
         self.dependencies = self.pkg.dependencies
 
@@ -490,6 +514,7 @@ class EXE(Target):
         return bootloader_file
 
     def assemble(self):
+        from ..config import CONF
         logger.info("Building EXE from %s", self.tocbasename)
         trash = []
         if os.path.exists(self.name):
@@ -502,7 +527,11 @@ class EXE(Target):
 
 
         if is_win and (self.icon or self.versrsrc or self.resources):
-            tmpnm = tempfile.mktemp()
+            fd, tmpnm = tempfile.mkstemp(prefix=os.path.basename(exe) + ".",
+                                         dir=CONF['workpath'])
+            # need to close the file, otherwise copying resources will fail
+            # with "the file [...] is being used by another process"
+            os.close(fd)
             self._copyfile(exe, tmpnm)
             os.chmod(tmpnm, 0o755)
             if self.icon:
@@ -517,6 +546,8 @@ class EXE(Target):
                     except ValueError:
                         pass
                 resfile = res[0]
+                if not os.path.isabs(resfile):
+                    resfile = os.path.join(CONF['specpath'], resfile)
                 restype = resname = reslang = None
                 if len(res) > 1:
                     restype = res[1]
@@ -555,6 +586,8 @@ class EXE(Target):
                         logger.error("Error while updating resource %s %s in %s"
                                      " from data file %s",
                                      restype, resname, tmpnm, resfile, exc_info=1)
+            if is_win and self.manifest and not self.exclude_binaries:
+                self.manifest.update_resources(tmpnm, [1])
             trash.append(tmpnm)
             exe = tmpnm
 
@@ -628,6 +661,7 @@ class COLLECT(Target):
         from ..config import CONF
         Target.__init__(self)
         self.strip_binaries = kws.get('strip', False)
+        self.upx_exclude = kws.get("upx_exclude", [])
         self.console = True
 
         if CONF['hasUPX']:
@@ -690,10 +724,16 @@ class COLLECT(Target):
                 os.makedirs(todir)
             if typ in ('EXTENSION', 'BINARY'):
                 fnm = checkCache(fnm, strip=self.strip_binaries,
-                                 upx=(self.upx_binaries and (is_win or is_cygwin)),
+                                 upx=self.upx_binaries,
+                                 upx_exclude=self.upx_exclude,
                                  dist_nm=inm)
             if typ != 'DEPENDENCY':
-                shutil.copy(fnm, tofnm)
+                if os.path.isdir(fnm):
+                    # beacuse shutil.copy2() is the default copy function
+                    # for shutil.copytree, this will also copy file metadata
+                    shutil.copytree(fnm, tofnm)
+                else:
+                    shutil.copy(fnm, tofnm)
                 try:
                     shutil.copystat(fnm, tofnm)
                 except OSError:

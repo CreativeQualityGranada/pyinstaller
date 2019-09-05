@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #-----------------------------------------------------------------------------
-# Copyright (c) 2005-2018, PyInstaller Development Team.
+# Copyright (c) 2005-2019, PyInstaller Development Team.
 #
 # Distributed under the terms of the GNU General Public License with exception
 # for distributing bootloader.
@@ -15,7 +15,7 @@ import ctypes.util
 
 import pytest
 
-from PyInstaller.compat import is_darwin, is_py2, is_py3, is_py35, is_win
+from PyInstaller.compat import is_darwin, is_py2, is_py3, is_win
 from PyInstaller.utils.tests import skipif, importorskip, \
     skipif_notwin, skipif_no_compiler, xfail, has_compiler
 
@@ -144,6 +144,7 @@ def test_module_with_coding_utf8(pyi_builder):
 
 def test_hiddenimport(pyi_builder):
     # The script simply does nothing, not even print out a line.
+    # The check is done by comparing with logs/test_hiddenimport.toc
     pyi_builder.test_source('pass',
                             ['--hidden-import=a_hidden_import'])
 
@@ -218,8 +219,8 @@ def test_import_pyqt5_uic_port(script_dir, pyi_builder):
 #--- ctypes ----
 
 @skipif_no_compiler
-@skipif(is_py35 and is_win,
-        reason="MSVCR not directly loadable on py3.5, see https://bugs.python.org/issue23606")
+@skipif(is_py3 and is_win,
+        reason="MSVCR not directly loadable on py >= 3.5, see https://bugs.python.org/issue23606")
 def test_ctypes_CDLL_c(pyi_builder):
     # Make sure we are able to load the MSVCRXX.DLL resp. libc.so we are
     # currently bound. This is some of a no-brainer since the resp. dll/so
@@ -332,10 +333,10 @@ for prefix in ('', 'ctypes.'):
         # Marking doesn't seem to chain here, so select just one skippping mark
         # instead of both.
         if not has_compiler:
-            params = skipif_no_compiler(params)
+            params = pytest.param(*params, marks=skipif_no_compiler(params))
         elif funcname in ("WinDLL", "OleDLL"):
             # WinDLL, OleDLL only work on windows.
-            params = skipif_notwin(params)
+            params = pytest.param(*params, marks=skipif_notwin(params))
         parameters.append(params)
 
 @pytest.mark.parametrize("funcname,test_id", parameters, ids=ids)

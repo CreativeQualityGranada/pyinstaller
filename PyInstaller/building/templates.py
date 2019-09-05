@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------------------
-# Copyright (c) 2005-2018, PyInstaller Development Team.
+# Copyright (c) 2005-2019, PyInstaller Development Team.
 #
 # Distributed under the terms of the GNU General Public License with exception
 # for distributing bootloader.
@@ -12,7 +12,7 @@
 Templates to generate .spec files.
 """
 
-onefiletmplt = """# -*- mode: python -*-
+onefiletmplt = """# -*- mode: python ; coding: utf-8 -*-
 %(cipher_init)s
 
 a = Analysis(%(scripts)s,
@@ -37,13 +37,15 @@ exe = EXE(pyz,
           %(options)s,
           name='%(name)s',
           debug=%(debug_bootloader)s,
+          bootloader_ignore_signals=%(bootloader_ignore_signals)s,
           strip=%(strip)s,
           upx=%(upx)s,
+          upx_exclude=%(upx_exclude)s,
           runtime_tmpdir=%(runtime_tmpdir)r,
           console=%(console)s %(exe_options)s)
 """
 
-onedirtmplt = """# -*- mode: python -*-
+onedirtmplt = """# -*- mode: python ; coding: utf-8 -*-
 %(cipher_init)s
 
 a = Analysis(%(scripts)s,
@@ -66,6 +68,7 @@ exe = EXE(pyz,
           exclude_binaries=True,
           name='%(name)s',
           debug=%(debug_bootloader)s,
+          bootloader_ignore_signals=%(bootloader_ignore_signals)s,
           strip=%(strip)s,
           upx=%(upx)s,
           console=%(console)s %(exe_options)s)
@@ -75,6 +78,7 @@ coll = COLLECT(exe,
                a.datas,
                strip=%(strip)s,
                upx=%(upx)s,
+               upx_exclude=%(upx_exclude)s,
                name='%(name)s')
 """
 

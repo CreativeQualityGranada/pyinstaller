@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------------------
-# Copyright (c) 2013-2018, PyInstaller Development Team.
+# Copyright (c) 2013-2019, PyInstaller Development Team.
 #
 # Distributed under the terms of the GNU General Public License with exception
 # for distributing bootloader.
@@ -212,9 +212,8 @@ def UpdateResourcesFromDataFile(dstpath, srcpath, type_, names=None,
     names = a list of resource names to update (None = all)
     languages = a list of resource languages to update (None = all)
     """
-    src = open(srcpath, "rb")
-    data = src.read()
-    src.close()
+    with open(srcpath, "rb") as src:
+        data = src.read()
     UpdateResources(dstpath, data, type_, names, languages)
 
 

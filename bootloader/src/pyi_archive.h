@@ -1,6 +1,6 @@
 /*
  * ****************************************************************************
- * Copyright (c) 2013-2018, PyInstaller Development Team.
+ * Copyright (c) 2013-2019, PyInstaller Development Team.
  * Distributed under the terms of the GNU General Public License with exception
  * for distributing bootloader.
  *
@@ -98,7 +98,7 @@ typedef struct _archive_status {
                        */
 } ARCHIVE_STATUS;
 
-TOC *pyi_arch_increment_toc_ptr(ARCHIVE_STATUS *status, TOC* ptoc);
+TOC *pyi_arch_increment_toc_ptr(const ARCHIVE_STATUS *status, const TOC* ptoc);
 
 unsigned char *pyi_arch_extract(ARCHIVE_STATUS *status, TOC *ptoc);
 int pyi_arch_extract2fs(ARCHIVE_STATUS *status, TOC *ptoc);
@@ -142,6 +142,6 @@ int pyi_arch_setup(ARCHIVE_STATUS *status, char const * archivePath,
 TOC *getFirstTocEntry(ARCHIVE_STATUS *status);
 TOC *getNextTocEntry(ARCHIVE_STATUS *status, TOC *entry);
 
-char * pyi_arch_get_option(ARCHIVE_STATUS * status, char * optname);
+char * pyi_arch_get_option(const ARCHIVE_STATUS * status, char * optname);
 
 #endif  /* PYI_ARCHIVE_H */

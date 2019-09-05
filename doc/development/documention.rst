@@ -22,7 +22,7 @@ a new version at https://pyinstaller.readthedocs.io/en/latest/.
 For **small changes** (like typos) you may just fork |PyInstaller| on Github,
 edit the documentation online and create a pull-request.
 
-For anything else we ask you to clone the repository and verify you changes
+For anything else we ask you to clone the repository and verify your changes
 like this::
 
   pip install sphinx sphinx_rtd_theme
@@ -57,8 +57,9 @@ __ http://www.sphinx-doc.org/en/stable/rest.html#inline-markup
 
 .. rst:role:: commit
 
-   Create a link to a commit, the text will be shortened to 8 digits
-   for readability. Example: ``:commit:`a1b2c3d4e5f6a7b8c9``` will become
+   Refer to a commit, creating a web-link to the online git repository.
+   The commit-id will be shortened to 8 digits for readability. 
+   Example: ``:commit:`a1b2c3d4e5f6a7b8c9``` will become
    :commit:`a1b2c3d4e5f6a7b8c9`.
 
 .. rst:role:: issue
