@@ -1,10 +1,12 @@
 #-----------------------------------------------------------------------------
-# Copyright (c) 2005-2019, PyInstaller Development Team.
+# Copyright (c) 2005-2020, PyInstaller Development Team.
 #
-# Distributed under the terms of the GNU General Public License with exception
-# for distributing bootloader.
+# Distributed under the terms of the GNU General Public License (version 2
+# or later) with exception for distributing the bootloader.
 #
 # The full license is in the file COPYING.txt, distributed with this software.
+#
+# SPDX-License-Identifier: (GPL-2.0-or-later WITH Bootloader-exception)
 #-----------------------------------------------------------------------------
 
 
@@ -230,9 +232,7 @@ class PKG(Target):
                 # file is contained within python egg, it is added with the egg
                 continue
             if typ in ('BINARY', 'EXTENSION', 'DEPENDENCY'):
-                if self.exclude_binaries and typ != 'DEPENDENCY':
-                    self.dependencies.append((inm, fnm, typ))
-                else:
+                if not self.exclude_binaries or typ == 'DEPENDENCY':
                     if typ == 'BINARY':
                         # Avoid importing the same binary extension twice. This might
                         # happen if they come from different sources (eg. once from
@@ -424,7 +424,8 @@ class EXE(Target):
                                  "", "OPTION"))
 
             if self.versrsrc:
-                if not os.path.isabs(self.versrsrc):
+                if (not isinstance(self.versrsrc, versioninfo.VSVersionInfo)
+                    and not os.path.isabs(self.versrsrc)):
                     # relative version-info path is relative to spec file
                     self.versrsrc = os.path.join(
                         CONF['specpath'], self.versrsrc)
@@ -525,8 +526,8 @@ class EXE(Target):
         if not os.path.exists(exe):
             raise SystemExit(_MISSING_BOOTLOADER_ERRORMSG)
 
-
-        if is_win and (self.icon or self.versrsrc or self.resources):
+        if is_win and (self.icon or self.versrsrc or self.resources or
+                self.uac_admin or self.uac_uiaccess):
             fd, tmpnm = tempfile.mkstemp(prefix=os.path.basename(exe) + ".",
                                          dir=CONF['workpath'])
             # need to close the file, otherwise copying resources will fail
@@ -722,6 +723,11 @@ class COLLECT(Target):
             todir = os.path.dirname(tofnm)
             if not os.path.exists(todir):
                 os.makedirs(todir)
+            elif not os.path.isdir(todir):
+                raise SystemExit(
+                    "Pyinstaller needs to make a directory, but there "
+                    "already is a file at that path. "
+                    "The file at issue is {!r}".format(todir))
             if typ in ('EXTENSION', 'BINARY'):
                 fnm = checkCache(fnm, strip=self.strip_binaries,
                                  upx=self.upx_binaries,
@@ -784,7 +790,8 @@ class MERGE(object):
         Filter shared dependencies to be only in first executable.
         """
         for analysis, _, _ in args:
-            path = os.path.abspath(analysis.scripts[-1][1]).replace(self._common_prefix, "", 1)
+            path = os.path.normcase(os.path.abspath(analysis.scripts[-1][1]))
+            path = path.replace(self._common_prefix, "", 1)
             path = os.path.splitext(path)[0]
             if os.path.normcase(path) in self._id_to_path:
                 path = self._id_to_path[os.path.normcase(path)]
@@ -802,7 +809,10 @@ class MERGE(object):
                 else:
                     dep_path = self._get_relative_path(path, self._dependencies[tpl[1]])
                     logger.debug("Referencing %s to be a dependecy for %s, located in %s" % (tpl[1], path, dep_path))
-                    analysis.dependencies.append((":".join((dep_path, tpl[0])), tpl[1], "DEPENDENCY"))
+                    analysis.dependencies.append(
+                        (":".join((dep_path, os.path.basename(tpl[1]))),
+                         tpl[1],
+                         "DEPENDENCY"))
                     toc[i] = (None, None, None)
             # Clean the list
             toc[:] = [tpl for tpl in toc if tpl != (None, None, None)]

@@ -1,10 +1,12 @@
 #-----------------------------------------------------------------------------
-# Copyright (c) 2013-2019, PyInstaller Development Team.
+# Copyright (c) 2013-2020, PyInstaller Development Team.
 #
-# Distributed under the terms of the GNU General Public License with exception
-# for distributing bootloader.
+# Distributed under the terms of the GNU General Public License (version 2
+# or later) with exception for distributing the bootloader.
 #
 # The full license is in the file COPYING.txt, distributed with this software.
+#
+# SPDX-License-Identifier: (GPL-2.0-or-later WITH Bootloader-exception)
 #-----------------------------------------------------------------------------
 
 from PyInstaller.utils.hooks import collect_data_files, collect_submodules
@@ -19,14 +21,9 @@ hiddenimports = collect_submodules('astropy')
 
 # We now need to include the *_parsetab.py and *_lextab.py files for unit and
 # coordinate parsing, since these are loaded as files rather than imported as
-# sub-modules. We leverage collect_data_files to get all files in astropy then
-# filter these.
-ply_files = []
-for path, target in collect_data_files('astropy', include_py_files=True):
-    if path.endswith(('_parsetab.py', '_lextab.py')):
-        ply_files.append((path, target))
-
-datas += ply_files
+# sub-modules.
+datas = collect_data_files('astropy', include_py_files=True,
+                           includes=['**/*_parsetab.py', '**/*_lextab.py'])
 
 # In the Cython code, Astropy imports numpy.lib.recfunctions which isn't
 # automatically discovered by pyinstaller, so we add this as a hidden import.

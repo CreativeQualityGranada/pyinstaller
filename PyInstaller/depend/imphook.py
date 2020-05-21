@@ -1,10 +1,12 @@
 #-----------------------------------------------------------------------------
-# Copyright (c) 2005-2019, PyInstaller Development Team.
+# Copyright (c) 2005-2020, PyInstaller Development Team.
 #
-# Distributed under the terms of the GNU General Public License with exception
-# for distributing bootloader.
+# Distributed under the terms of the GNU General Public License (version 2
+# or later) with exception for distributing the bootloader.
 #
 # The full license is in the file COPYING.txt, distributed with this software.
+#
+# SPDX-License-Identifier: (GPL-2.0-or-later WITH Bootloader-exception)
 #-----------------------------------------------------------------------------
 
 
@@ -16,8 +18,7 @@ import glob, sys, weakref
 import os.path
 
 from .. import log as logging
-from ..compat import (
-    expand_path, importlib_load_source, FileNotFoundError)
+from ..compat import expand_path, importlib_load_source
 from .imphookapi import PostGraphAPI
 from ..building.utils import format_binaries_and_datas
 
@@ -273,6 +274,7 @@ class ModuleHook(object):
 
         # Note that the passed module graph is already a weak reference,
         # avoiding circular reference issues. See ModuleHookCache.__init__().
+        # TODO: Add a failure message
         assert isinstance(module_graph, weakref.ProxyTypes)
         self.module_graph = module_graph
         self.module_name = module_name
@@ -284,7 +286,9 @@ class ModuleHook(object):
 
         # Safety check, see above
         global HOOKS_MODULE_NAMES
-        assert self.hook_module_name not in HOOKS_MODULE_NAMES
+        assert self.hook_module_name not in HOOKS_MODULE_NAMES, \
+            'Hook Conflict. Please remove the following custom hook: ' \
+            '{hook}'.format(hook=self.hook_module_name)
         HOOKS_MODULE_NAMES.add(self.hook_module_name)
 
         # Attributes subsequently defined by the _load_hook_module() method.
@@ -292,7 +296,7 @@ class ModuleHook(object):
 
 
     def __getattr__(self, attr_name):
-        '''
+        """
         Get the magic attribute with the passed name (e.g., `datas`) from this
         lazily loaded hook script if any _or_ raise `AttributeError` otherwise.
 
@@ -310,7 +314,7 @@ class ModuleHook(object):
         See Also
         ----------
         Class docstring for supported magic attributes.
-        '''
+        """
 
         # If this is a magic attribute, initialize this attribute by lazy
         # loading this hook script and then return this attribute. To avoid
@@ -324,7 +328,7 @@ class ModuleHook(object):
 
 
     def __setattr__(self, attr_name, attr_value):
-        '''
+        """
         Set the attribute with the passed name to the passed value.
 
         If this is a magic attribute, this hook script will be lazily loaded
@@ -335,7 +339,7 @@ class ModuleHook(object):
         See Also
         ----------
         Class docstring for supported magic attributes.
-        '''
+        """
 
         # If this is a magic attribute, initialize this attribute by lazy
         # loading this hook script before overwriting this attribute.
@@ -376,8 +380,9 @@ class ModuleHook(object):
 
         # Load and execute the hook script. Even if mechanisms from the import
         # machinery are used, this does not import the hook as the module.
+        head, tail = os.path.split(self.hook_filename)
         logger.info(
-            'Loading module hook "%s"...', os.path.basename(self.hook_filename))
+            'Loading module hook %r from %r...', tail, head)
         self._hook_module = importlib_load_source(
             self.hook_module_name, self.hook_filename)
 

@@ -7,8 +7,6 @@ but uses a graph data structure and 2.3 features
 XXX: Verify all calls to _import_hook (and variants) to ensure that
 imports are done in the right way.
 """
-from __future__ import absolute_import, print_function
-
 #FIXME: To decrease the likelihood of ModuleGraph exceeding the recursion limit
 #and hence unpredictably raising fatal exceptions, increase the recursion
 #limit at PyInstaller startup (i.e., in the
@@ -19,7 +17,6 @@ import pkg_resources
 
 import ast
 import codecs
-import dis
 import imp
 import marshal
 import os
@@ -27,7 +24,6 @@ import pkgutil
 import sys
 import re
 from collections import deque, namedtuple
-from struct import unpack
 import warnings
 
 from altgraph.ObjectGraph import ObjectGraph
@@ -35,8 +31,7 @@ from altgraph import GraphError
 
 from . import util
 from . import zipio
-from ._compat import get_instructions, BytesIO, StringIO, \
-     pathname2url, _cOrd, _READ_MODE
+from ._compat import BytesIO, StringIO, pathname2url, _READ_MODE
 
 
 BOM = codecs.BOM_UTF8.decode('utf-8')
@@ -89,6 +84,9 @@ _IMPORTABLE_FILETYPE_TO_METADATA = {
     filetype: (filetype, open_mode, imp_type)
     for filetype, open_mode, imp_type in imp.get_suffixes()
 }
+# Reverse sort by length so when comparing filenames the longest match first
+_IMPORTABLE_FILETYPE_EXTS = sorted(_IMPORTABLE_FILETYPE_TO_METADATA,
+                                   key=lambda p: len(p), reverse=True)
 """
 Dictionary mapping the filetypes of importable files to the 3-tuple of metadata
 describing such files returned by the `imp.get_suffixes()` function whose first
@@ -102,16 +100,20 @@ including:
 * C extensions suffixed by the platform-specific shared library filetype (e.g.,
   `.so` under Linux, `.dll` under Windows).
 
-The keys of this dictionary are `.`-prefixed filetypes (e.g., `.py`, `.so');
+The keys of this dictionary are `.`-prefixed filetypes (e.g., `.py`, `.so`) or
+`-`-prefixed filetypes (e.g., `-cpython-37m.dll`[1]);
 the values of this dictionary are 3-tuples whose:
 
-1. First element is the same `.`-prefixed filetype.
+1. First element is the same `.` or `-` prefixed filetype.
 1. Second element is the mode to be passed to the `open()` built-in to open
    files of that filetype under the current platform and Python interpreter
    (e.g., `rU` for the `.py` filetype under Python 2, `r` for the same
    filetype under Python 3).
 1. Third element is a magic number specific to the `imp` module (e.g.,
    `imp.C_EXTENSION` for filetypes corresponding to C extensions).
+
+[1] For example of `-cpython-m37.dll` search on
+    https://packages.msys2.org/package/mingw-w64-x86_64-python3?repo=mingw64
 """
 
 
@@ -3091,8 +3093,16 @@ class ModuleGraph(ObjectGraph):
                 # Else, this is either a module or C extension.
                 else:
                     # In either case, this path must have a filetype.
-                    filetype = os.path.splitext(pathname)[1]
-                    if not filetype:
+                    # os.path.splitext won't work here since we sometimes need
+                    # to match more than just the file extension.
+                    filetype = [filetype
+                                for filetype in _IMPORTABLE_FILETYPE_EXTS
+                                if pathname.endswith(filetype)]
+                    if filetype:
+                        # at least one extension matched,
+                        # pick the first (longest) one
+                        filetype = filetype[0]
+                    else:
                         raise ImportError(
                             'Non-package module %r path %r has no filetype' % (module_name, pathname))
 
